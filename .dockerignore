@@ -1,0 +1,36 @@
+# Frontend build output - tidak dibutuhkan di container
+frontend/
+
+# Dataset CT-Scan (sangat besar, tidak perlu di container)
+chest-ctscan-images/
+
+# Skill agents
+.agents/
+.agent/
+
+# Git
+.git/
+.gitignore
+
+# Notebook files
+*.ipynb
+
+# Office/design files
+*.xlsx
+*.csv
+*.docx
+*.svg
+
+# Root-level Python utility scripts (bukan bagian aplikasi)
+eval_accuracy.py
+build_improved_notebook.py
+geocode_hospitals.py
+process_doctors.py
+process_doctors_fast.py
+
+# Python cache
+backend/__pycache__/
+backend/models/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
