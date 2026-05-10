@@ -1,0 +1,25 @@
+{
+  "label_to_idx": {
+    "adenocarcinoma": 0,
+    "large_cell_carcinoma": 1,
+    "squamous_cell_carcinoma": 2,
+    "normal": 3
+  },
+  "idx_to_label": {
+    "0": "adenocarcinoma",
+    "1": "large_cell_carcinoma",
+    "2": "squamous_cell_carcinoma",
+    "3": "normal"
+  },
+  "img_size": [
+    224,
+    224
+  ],
+  "model_name": "lungscan_ai_effnetb0_baseline",
+  "classes": [
+    "adenocarcinoma",
+    "large_cell_carcinoma",
+    "squamous_cell_carcinoma",
+    "normal"
+  ]
+}

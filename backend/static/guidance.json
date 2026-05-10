@@ -1,0 +1,74 @@
+{
+  "adenocarcinoma": {
+    "urgency": "Tinggi",
+    "consultation_timeframe": "1-3 Hari",
+    "dos": [
+      "Segera buat janji temu dengan Dokter Spesialis Onkologi Paru.",
+      "Kumpulkan seluruh rekam medis terdahulu, termasuk hasil lab darah dan scan lainnya.",
+      "Minta pendampingan keluarga atau kerabat dekat untuk dukungan emosional saat konsultasi.",
+      "Bawa seluruh obat-obatan yang sedang Anda konsumsi saat ini.",
+      "Catat setiap gejala (batuk, sesak, penurunan berat badan) beserta frekuensi dan durasinya."
+    ],
+    "donts": [
+      "Jangan menunda jadwal konsultasi atau mencari opini pengobatan alternatif tanpa dasar medis.",
+      "Jangan abaikan gejala baru seperti sesak napas akut atau batuk berdarah.",
+      "Hindari paparan asap rokok, debu, atau polusi udara secara langsung.",
+      "Jangan menghentikan obat rutin tanpa persetujuan dari dokter Anda.",
+      "Jangan panik berlebihan; diagnosis awal melalui skrining memerlukan biopsi lanjutan untuk konfirmasi pasti."
+    ]
+  },
+  "squamous_cell_carcinoma": {
+    "urgency": "Tinggi",
+    "consultation_timeframe": "1-3 Hari",
+    "dos": [
+      "Segera temui Dokter Spesialis Paru (Sp.P) atau Onkologi.",
+      "Catat semua riwayat merokok secara mendetail (jumlah bungkus/tahun).",
+      "Persiapkan diri untuk pemeriksaan lanjutan seperti bronkoskopi.",
+      "Tetap terhidrasi dan makan makanan bergizi untuk menjaga daya tahan tubuh.",
+      "Pantau tingkat saturasi oksigen jika Anda memiliki oximeter di rumah."
+    ],
+    "donts": [
+      "BERHENTI MEROKOK SEKARANG JUGA, jangan menghisap satu batang pun lagi.",
+      "Jangan mengonsumsi obat batuk sembarangan dari apotek tanpa resep dokter.",
+      "Hindari aktivitas fisik berat yang dapat memperparah sesak napas.",
+      "Jangan menyembunyikan riwayat medis apa pun dari dokter Anda.",
+      "Hindari lingkungan dengan ventilasi udara yang buruk atau tempat berdebu."
+    ]
+  },
+  "large_cell_carcinoma": {
+    "urgency": "Sangat Tinggi",
+    "consultation_timeframe": "24-48 Jam",
+    "dos": [
+      "Prioritaskan konsultasi dengan Onkolog dalam waktu 24 hingga 48 jam ke depan.",
+      "Bawa salinan asli dan digital dari file CT-Scan (DICOM) Anda ke dokter.",
+      "Tanyakan kepada dokter tentang opsi tes mutasi genetik (biomarker).",
+      "Bicarakan rencana perawatan segera bersama keluarga inti.",
+      "Siapkan mental untuk proses diagnosis yang lebih agresif."
+    ],
+    "donts": [
+      "Jangan tunda pencarian fasilitas medis dengan kemampuan onkologi lengkap.",
+      "Jangan mencoba pengobatan herbal sebagai pengganti terapi medis utama.",
+      "Hindari bepergian jauh (traveling) menggunakan pesawat terbang sebelum dokter mengizinkan.",
+      "Jangan mengabaikan tanda-tanda kelelahan ekstrem; istirahatlah yang cukup.",
+      "Jangan ragu untuk mencari 'Second Opinion' atau opini kedua dari spesialis lain."
+    ]
+  },
+  "normal": {
+    "urgency": "Rendah",
+    "consultation_timeframe": "Sesuai Kebutuhan",
+    "dos": [
+      "Pertahankan gaya hidup sehat, rutin berolahraga, dan konsumsi gizi seimbang.",
+      "Lakukan skrining atau general check-up kesehatan secara rutin setiap tahun.",
+      "Tetap gunakan masker jika berada di area berpolusi tinggi.",
+      "Simpan hasil CT-Scan ini sebagai data pembanding (baseline) untuk masa depan.",
+      "Segera konsultasi jika muncul gejala pernapasan yang tidak biasa."
+    ],
+    "donts": [
+      "Jangan lengah terhadap bahaya perokok pasif (second-hand smoke).",
+      "Jangan ragu untuk memeriksakan diri jika mengalami batuk terus-menerus selama lebih dari 3 minggu.",
+      "Hindari kebiasaan begadang yang menurunkan imunitas tubuh.",
+      "Jangan membuang file rekam medis ini meskipun hasilnya normal.",
+      "Hindari terpapar bahan kimia industri tanpa alat pelindung pernapasan."
+    ]
+  }
+}

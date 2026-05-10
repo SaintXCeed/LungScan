@@ -1,0 +1,1 @@
+Full model .h5 gagal disimpan di environment ini. Gunakan lungscan_ai_baseline.keras untuk load langsung, atau gunakan lungscan_ai_baseline.weights.h5 dengan rebuild architecture.

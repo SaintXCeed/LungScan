@@ -1,0 +1,20 @@
+{
+  "label_to_idx": {
+    "adenocarcinoma_left.lower.lobe_T2_N0_M0_Ib": 0,
+    "large.cell.carcinoma_left.hilum_T2_N2_M0_IIIa": 1,
+    "normal": 2,
+    "squamous.cell.carcinoma_left.hilum_T1_N2_M0_IIIa": 3
+  },
+  "idx_to_label": {
+    "0": "adenocarcinoma_left.lower.lobe_T2_N0_M0_Ib",
+    "1": "large.cell.carcinoma_left.hilum_T2_N2_M0_IIIa",
+    "2": "normal",
+    "3": "squamous.cell.carcinoma_left.hilum_T1_N2_M0_IIIa"
+  },
+  "img_size": [
+    224,
+    224
+  ],
+  "model_name": "lungscan_ai_effnetb0_improved",
+  "test_accuracy": 61.59
+}
