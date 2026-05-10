@@ -13,7 +13,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 # ── Python dependencies ────────────────────────────────────────────────────────
-# Use backend/requirements.txt (has tensorflow==2.15.0, not cpu variant)
 COPY backend/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir -r requirements.txt
@@ -21,7 +20,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 # ── Application code & model files ────────────────────────────────────────────
 COPY . .
 
+# Set working directory ke backend — jadi tidak perlu 'cd' di CMD
+WORKDIR /app/backend
+
 EXPOSE 8000
 
+# Tidak pakai 'cd' — WORKDIR sudah di /app/backend
 # Railway injects $PORT; fallback ke 8000 untuk lokal
-CMD cd backend && uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
