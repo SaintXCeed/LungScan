@@ -1,0 +1,17 @@
+﻿Running 3 prediction tests to measure timing...
+
+Test 1: 7.12s
+  prediction: adenocarcinoma (95.32%)
+  severity  : Malignant (95.44%)
+  heatmap   : 44078 chars
+
+Test 2: 6.55s
+  prediction: adenocarcinoma (95.32%)
+  severity  : Malignant (95.44%)
+  heatmap   : 44078 chars
+
+Test 3: 6.99s
+  prediction: adenocarcinoma (95.32%)
+  severity  : Malignant (95.44%)
+  heatmap   : 44078 chars
+

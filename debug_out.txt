@@ -1,0 +1,36 @@
+﻿python : WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+At line:1 char:1
++ python debug_gradcam.py 2>&1 | Out-File -Encoding utf8 debug_out.txt; ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: All lo...itten to STDERR:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+I0000 00:00:1780631199.959252    6840 port.cc:153] oneDNN custom operations are on. You may see slightly different 
+numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the 
+environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1780631215.418053    6840 port.cc:153] oneDNN custom operations are on. You may see slightly different 
+numerical results due to floating-point round-off errors from different computation orders. To turn them off, set the 
+environment variable `TF_ENABLE_ONEDNN_OPTS=0`.
+I0000 00:00:1780631228.367662    6840 cpu_feature_guard.cc:227] This TensorFlow binary is optimized to use available 
+CPU instructions in performance-critical operations.
+To enable the following instructions: SSE3 SSE4.1 SSE4.2 AVX, in other operations, rebuild TensorFlow with the 
+appropriate compiler flags.
+WARNING:tensorflow:TensorFlow GPU support is not available on native Windows for TensorFlow >= 2.11. Even if 
+CUDA/cuDNN are installed, GPU will not be used. Please use WSL2 or the TensorFlow-DirectML plugin.
+Loading model...
+model.outputs: [<KerasTensor shape=(None, 4), dtype=float32, sparse=False, ragged=False, name=keras_tensor_373>]
+len: 1
+  output[0]: (None, 4) name=keras_tensor_373
+
+Last 5 layers:
+  conv5_block3_out: Activation
+    output shape: (None, 15, 15, 2048)
+  global_average_pooling2d: GlobalAveragePooling2D
+    output shape: (None, 2048)
+  dropout: Dropout
+    output shape: (None, 2048)
+  batch_normalization: BatchNormalization
+    output shape: (None, 2048)
+  dense: Dense
+    output shape: (None, 4)

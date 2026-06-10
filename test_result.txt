@@ -1,0 +1,13 @@
+﻿Γ£à SUCCESS
+  prediction         : adenocarcinoma
+  confidence         : 95.32%
+  severity           : Malignant
+  severity_confidence: 95.44%
+  model_accuracy     : 88.0%
+  heatmap_base64 len : 38918 chars
+  all_scores         : {
+    "adenocarcinoma": 95.32,
+    "large.cell.carcinoma": 0.92,
+    "normal": 2.83,
+    "squamous.cell.carcinoma": 0.92
+}

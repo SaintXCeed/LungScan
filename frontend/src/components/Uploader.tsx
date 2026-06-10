@@ -91,7 +91,8 @@ const Uploader: React.FC = () => {
       formData.append('file', file);
 
       // Call the FastAPI backend
-      const response = await fetch('http://localhost:8000/api/predict', {
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiBase}/api/predict`, {
         method: 'POST',
         body: formData,
       });
