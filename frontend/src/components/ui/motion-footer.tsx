@@ -197,9 +197,9 @@ MagneticButton.displayName = "MagneticButton";
 const MarqueeItem = () => (
   <div className="flex items-center space-x-12 px-6">
     <span>Deteksi Dini Kanker</span> <span className="text-emerald-400">✦</span>
-    <span>Akurasi Tinggi</span> <span className="text-cyan-400">✦</span>
+    <span>Akurasi Tinggi</span> <span className="text-emerald-400">✦</span>
     <span>Grad-CAM Visualisasi</span> <span className="text-emerald-400">✦</span>
-    <span>Teknologi Deep Learning</span> <span className="text-cyan-400">✦</span>
+    <span>Teknologi Deep Learning</span> <span className="text-emerald-400">✦</span>
     <span>Privasi Terjamin</span> <span className="text-emerald-400">✦</span>
   </div>
 );

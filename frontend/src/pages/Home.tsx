@@ -8,28 +8,28 @@ import { CinematicFooter } from '../components/ui/motion-footer';
 
 const Home: React.FC = () => {
   return (
-    <div className="flex-1 w-full relative overflow-x-hidden bg-[#0a0f1c]">
+    <div className="flex-1 w-full relative overflow-x-hidden bg-white dark:bg-[#0a0f1c] transition-colors duration-200">
       
       {/* 
         MAIN CONTENT AREA 
         Wrapped with high z-index and background to slide over the cinematic footer
       */}
-      <main className="relative z-10 w-full bg-navy-900 flex flex-col items-center rounded-b-[2.5rem] border-b border-white/5 shadow-2xl pb-12">
+      <main className="relative z-10 w-full bg-slate-50 dark:bg-navy-900 flex flex-col items-center rounded-b-[2.5rem] border-b border-slate-200 dark:border-white/5 shadow-2xl pb-12 transition-colors duration-200">
         {/* New Hero Section 5 with DNA Video & Infinite Slider */}
         <div className="w-full">
           <HeroSection />
         </div>
 
         {/* Cinematic 3D Scroll Animation for Dashboard Mockup */}
-        <div className="w-full flex flex-col overflow-hidden pb-12 mt-12 bg-navy-900/50">
+        <div className="w-full flex flex-col overflow-hidden pb-12 mt-12 bg-slate-100 dark:bg-navy-900/50">
           <ContainerScroll
             titleComponent={
               <div className="mb-12 px-6">
                 <h2 className="text-3xl md:text-5xl font-bold tracking-tight mb-4 text-center">
                   Antarmuka Transparan & <br />
-                  <span className="text-emerald-400">Mudah Dipahami.</span>
+                  <span className="text-emerald-600 dark:text-emerald-400">Mudah Dipahami.</span>
                 </h2>
-                <p className="text-gray-400 max-w-xl mx-auto text-center">
+                <p className="text-slate-600 dark:text-gray-400 max-w-xl mx-auto text-center">
                   Lihat hasil prediksi dengan visualisasi heatmap Grad-CAM yang menunjukkan area indikasi pada paru-paru secara persis.
                 </p>
               </div>
@@ -49,7 +49,7 @@ const Home: React.FC = () => {
         <div className="w-full max-w-6xl mx-auto px-6 pb-20 pt-20">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold mb-4">Mengapa Memilih LungScan AI?</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">Kami merancang platform ini dengan memprioritaskan privasi, kecepatan interpretasi, dan transparansi teknologi untuk mendukung langkah medis Anda selanjutnya.</p>
+            <p className="text-slate-600 dark:text-gray-400 max-w-2xl mx-auto">Kami merancang platform ini dengan memprioritaskan privasi, kecepatan interpretasi, dan transparansi teknologi untuk mendukung langkah medis Anda selanjutnya.</p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
@@ -80,10 +80,10 @@ const Home: React.FC = () => {
         </div>
 
         {/* Heatmap Example Section */}
-        <div id="heatmap-example" className="w-full max-w-6xl mx-auto px-6 py-20 border-t border-white/5">
+        <div id="heatmap-example" className="w-full max-w-6xl mx-auto px-6 py-20 border-t border-slate-200 dark:border-white/5">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">Contoh Analisis <span className="text-emerald-400">Grad-CAM</span></h2>
-            <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+            <h2 className="text-3xl md:text-5xl font-bold mb-6">Contoh Analisis <span className="text-emerald-600 dark:text-emerald-400">Grad-CAM</span></h2>
+            <p className="text-slate-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
               Berbeda dengan "Black Box" AI pada umumnya, LungScan AI menyertakan visualisasi heatmap. 
               Sistem menunjukkan secara persis area jaringan paru-paru mana yang memicu deteksi tumor atau anomali.
             </p>
@@ -92,9 +92,9 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 w-full mt-12">
             {/* Before */}
             <div className="flex flex-col group">
-              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden border border-white/10 mb-6 bg-black shadow-2xl">
+              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 mb-6 bg-slate-100 dark:bg-black shadow-2xl">
                 <img src="/ct_scan_normal_1778151120446.png" alt="CT Scan Normal" className="w-full h-full object-cover grayscale opacity-80 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="absolute top-6 left-6 bg-black/60 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10 text-sm font-bold tracking-wide">
+                <div className="absolute top-6 left-6 bg-white/90 dark:bg-black/60 text-slate-900 dark:text-white backdrop-blur-md px-5 py-2.5 rounded-full border border-slate-200 dark:border-white/10 text-sm font-bold tracking-wide">
                   Input: CT-Scan Asli
                 </div>
               </div>
@@ -102,9 +102,9 @@ const Home: React.FC = () => {
             
             {/* After */}
             <div className="flex flex-col group">
-              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden border border-emerald-500/30 mb-6 bg-black shadow-[0_0_50px_rgba(16,185,129,0.15)]">
+              <div className="relative aspect-[4/3] rounded-3xl overflow-hidden border border-emerald-500/30 mb-6 bg-slate-100 dark:bg-black shadow-[0_0_50px_rgba(16,185,129,0.15)]">
                 <img src="/ct_scan_gradcam_1778151138210.png" alt="CT Scan Grad-CAM" className="w-full h-full object-cover" />
-                <div className="absolute top-6 left-6 bg-navy-900/80 backdrop-blur-md px-5 py-2.5 rounded-full border border-emerald-500/30 text-sm font-bold tracking-wide text-emerald-400">
+                <div className="absolute top-6 left-6 bg-white/90 dark:bg-navy-900/80 backdrop-blur-md px-5 py-2.5 rounded-full border border-emerald-500/30 text-sm font-bold tracking-wide text-emerald-600 dark:text-emerald-400">
                   Output: Prediksi Tumor AI
                 </div>
                 {/* Glow overlay */}
@@ -121,7 +121,7 @@ const Home: React.FC = () => {
         <div id="upload-section" className="w-full max-w-6xl mx-auto px-6 py-20 flex flex-col items-center relative z-10">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold mb-4">Mulai Deteksi Sekarang</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">Unggah file CT-Scan dada Anda (JPEG, PNG, atau DCM) untuk memulai analisis awal yang cepat dan terjamin keamanannya.</p>
+            <p className="text-slate-600 dark:text-gray-400 max-w-2xl mx-auto">Unggah file CT-Scan dada Anda (JPEG, PNG, atau DCM) untuk memulai analisis awal yang cepat dan terjamin keamanannya.</p>
           </div>
           <div className="w-full max-w-2xl">
             <Uploader />

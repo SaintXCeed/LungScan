@@ -1,0 +1,77 @@
+﻿
+  super().__init__(activity_regularizer=activity_regularizer, **kwargs)
+============================================================
+LOADING MODELS
+============================================================
+
+[1] Last 8 layers of Type Model:
+  conv5_block3_3_conv                      Conv2D                         (None, 15, 15, 2048)
+  conv5_block3_3_bn                        BatchNormalization             (None, 15, 15, 2048)
+  conv5_block3_add                         Add                            (None, 15, 15, 2048)
+  conv5_block3_out                         Activation                     (None, 15, 15, 2048)
+  global_average_pooling2d                 GlobalAveragePooling2D         (None, 2048)
+  dropout                                  Dropout                        (None, 2048)
+  batch_normalization                      BatchNormalization             (None, 2048)
+  dense                                    Dense                          (None, 4)
+
+[2] Layers between GAP and Dense:
+  Chain: global_average_pooling2d -> dropout -> batch_normalization -> dense
+
+[3] BatchNorm layers found: ['batch_normalization']
+    gamma range  : [0.9812, 1.0034]
+    mean range   : [0.0812, 1.4335]
+    eff_scale rng: [0.5113, 10.0428]
+
+[4] Dense layer: W=(2048, 4), b=(4,)
+    W range: [-0.0569, 0.0537]
+
+[5] BN-corrected CAM weights:
+    w_eff range: [-0.2654, 0.3909]
+    Difference from raw W (mean abs): 0.0187
+
+[6] Severity model last 5 layers:
+  dense                                    Dense                     (None, 1024)
+  dropout                                  Dropout                   (None, 1024)
+  dense_1                                  Dense                     (None, 1024)
+  dropout_1                                Dropout                   (None, 1024)
+  dense_2                                  Dense                     (None, 3)
+
+============================================================
+PREDICTION ACCURACY TEST (3 images per class)
+============================================================
+
+  Class: adenocarcinoma (3 images)
+    [OK] 000108 (3).png                 -> adenocarcinoma            (95.3%)
+    [OK] 000109 (2).png                 -> adenocarcinoma            (72.4%)
+    [OK] 000109 (4).png                 -> adenocarcinoma            (79.9%)
+
+  Class: large.cell.carcinoma (3 images)
+    [OK] 000108.png                     -> large.cell.carcinoma      (98.3%)
+    [OK] 000110.png                     -> large.cell.carcinoma      (87.1%)
+    [OK] 000111 (2).png                 -> large.cell.carcinoma      (96.9%)
+
+  Class: normal (3 images)
+    [OK] 10 (2) - Copy.png              -> normal                    (93.5%)
+    [OK] 10 (2).png                     -> normal                    (93.5%)
+    [OK] 10 - Copy (2) - Copy.png       -> normal                    (91.1%)
+
+  Class: squamous.cell.carcinoma (3 images)
+    [OK] 000108 (6).png                 -> squamous.cell.carcinoma   (74.9%)
+    [WRONG] 000110 (2).png                 -> adenocarcinoma            (50.8%)
+    [OK] 000111.png                     -> squamous.cell.carcinoma   (59.5%)
+
+Local test accuracy: 11/12 = 91.7%
+
+============================================================
+SEVERITY MODEL TEST
+============================================================
+  000108 (3).png                : {'Normal': '1.0%', 'Benign': '3.6%', 'Malignant': '95.4%'}
+    -> Malignant (95.4%)
+  000109 (2).png                : {'Normal': '0.2%', 'Benign': '0.2%', 'Malignant': '99.7%'}
+    -> Malignant (99.7%)
+  000109 (4).png                : {'Normal': '2.3%', 'Benign': '3.6%', 'Malignant': '94.1%'}
+    -> Malignant (94.1%)
+
+Done.
+
+

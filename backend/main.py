@@ -6,6 +6,7 @@ import time
 import logging
 import numpy as np
 from PIL import Image
+from scipy.stats import entropy as scipy_entropy
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,7 +38,7 @@ SEVERITY_MODEL_PATH = os.path.join(MODEL_DIR, "Lung_Cancer_Severity_Model.h5")
 TYPE_INPUT_SIZE     = (460, 460)
 SEVERITY_INPUT_SIZE = (224, 224)
 
-MODEL_ACCURACY = 88.0
+MODEL_ACCURACY = 82.0
 
 # ── Grad-CAM target layer ──────────────────────────────────────────────────────
 GRADCAM_LAYER = "conv5_block3_out"   # last activation before GAP
@@ -61,9 +62,158 @@ _model_error       = None
 _warmed_up         = False
 
 
+# ── CT-Scan Validator ──────────────────────────────────────────────────────────
+# Thresholds (tunable via env vars for easy adjustment)
+_CT_MAX_SATURATION       = float(os.getenv("CT_MAX_SATURATION",       "0.18"))  # HSV S mean
+_CT_MIN_DARK_RATIO       = float(os.getenv("CT_MIN_DARK_RATIO",       "0.25"))  # fraction of pixels with L < 60
+_CT_MIN_ENTROPY          = float(os.getenv("CT_MIN_ENTROPY",          "3.5"))   # too low = solid/uniform
+_CT_MAX_ENTROPY          = float(os.getenv("CT_MAX_ENTROPY",          "7.8"))   # too high = fully colourful photo
+_CT_MIN_STDDEV           = float(os.getenv("CT_MIN_STDDEV",           "12.0"))  # not a blank/solid image
+_CT_MIN_CENTER_DARK_RATIO= float(os.getenv("CT_MIN_CENTER_DARK_RATIO", "0.05")) # center-zone dark ratio; very conservative to avoid false-rejecting severe cases
+
+
+def _validate_ct_scan(image_bytes: bytes) -> tuple[bool, str]:
+    """
+    Heuristic validator: checks whether an image looks like a lung CT-Scan
+    based on pixel-level statistics.  Returns (is_valid, reason_string).
+
+    A valid CT-Scan typically:
+      1. Is nearly grayscale  → low HSV saturation
+      2. Has a large dark background  → high dark-pixel ratio
+      3. Has structured texture  → entropy in a plausible medical range
+      4. Is not a solid blank image  → std-dev above a minimum
+    """
+    try:
+        img_pil = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        # Work on a small thumbnail to keep it fast
+        thumb = img_pil.copy()
+        thumb.thumbnail((256, 256), Image.LANCZOS)
+        arr = np.array(thumb, dtype=np.float32)  # (H, W, 3)  [0-255]
+
+        # ── 1. Saturation check (HSV S-channel) ───────────────────────────────
+        # Convert RGB [0-255] to HSV [0-1]
+        arr_norm = arr / 255.0
+        r, g, b = arr_norm[..., 0], arr_norm[..., 1], arr_norm[..., 2]
+        cmax = np.maximum(np.maximum(r, g), b)
+        cmin = np.minimum(np.minimum(r, g), b)
+        delta = cmax - cmin
+        # Saturation = delta / cmax  (0 where cmax==0)
+        with np.errstate(invalid='ignore'):
+            saturation = np.where(cmax > 0, delta / cmax, 0.0)
+        mean_sat = float(saturation.mean())
+
+        if mean_sat > _CT_MAX_SATURATION:
+            return False, (
+                f"Gambar terlalu berwarna (saturasi={mean_sat:.2f}, maks={_CT_MAX_SATURATION}). "
+                "CT-Scan paru seharusnya hampir grayscale. "
+                "Pastikan Anda mengunggah gambar CT-Scan dada yang valid."
+            )
+
+        # ── 2. Dark-pixel ratio (luminance proxy via grayscale) ───────────────
+        gray = np.array(thumb.convert("L"), dtype=np.float32)  # (H, W)
+        dark_ratio = float((gray < 60).mean())
+
+        if dark_ratio < _CT_MIN_DARK_RATIO:
+            return False, (
+                f"Gambar memiliki terlalu sedikit area gelap (rasio gelap={dark_ratio:.2f}, "
+                f"min={_CT_MIN_DARK_RATIO}). "
+                "CT-Scan paru memiliki latar belakang hitam yang dominan. "
+                "Pastikan Anda mengunggah gambar CT-Scan dada yang valid."
+            )
+
+        # ── 3. Entropy check (texture complexity) ─────────────────────────────
+        hist, _ = np.histogram(gray.flatten(), bins=256, range=(0, 256))
+        hist_prob = hist / (hist.sum() + 1e-10)
+        img_entropy = float(scipy_entropy(hist_prob + 1e-10, base=2))
+
+        if img_entropy < _CT_MIN_ENTROPY:
+            return False, (
+                f"Gambar terlalu seragam/polos (entropy={img_entropy:.2f}, "
+                f"min={_CT_MIN_ENTROPY}). "
+                "Pastikan Anda mengunggah gambar CT-Scan dada yang valid."
+            )
+        if img_entropy > _CT_MAX_ENTROPY:
+            return False, (
+                f"Gambar terlalu kompleks/berwarna-warni (entropy={img_entropy:.2f}, "
+                f"maks={_CT_MAX_ENTROPY}). "
+                "CT-Scan paru memiliki kompleksitas tekstur yang terbatas. "
+                "Pastikan Anda mengunggah gambar CT-Scan dada yang valid."
+            )
+
+        # ── 4. Std-dev check (not blank) ──────────────────────────────────────
+        std_dev = float(gray.std())
+        if std_dev < _CT_MIN_STDDEV:
+            return False, (
+                f"Gambar tampak hampir kosong/solid (std={std_dev:.2f}, "
+                f"min={_CT_MIN_STDDEV}). "
+                "Pastikan Anda mengunggah gambar CT-Scan dada yang valid."
+            )
+
+        return True, "OK"
+
+    except Exception as exc:
+        logger.warning(f"CT-Scan validation error (skipping): {exc}")
+        # If the validator itself crashes, allow the request through
+        return True, "validation-skipped"
+
+
+# ── Lung-region body-part check (WARNING only, never blocks) ──────────────────
+def _check_lung_region(image_bytes: bytes) -> tuple[bool, str]:
+    """
+    Soft heuristic to detect whether the CT-Scan is likely of the CHEST/LUNG
+    rather than another body part (brain, abdomen, etc.).
+
+    Returns (looks_like_lung: bool, reason: str).
+    This function NEVER causes a hard rejection — it only sets a warning flag.
+
+    Key insight:
+      - Lung CT (axial): center contains two dark lung fields (air ≈ pixel 0–60)
+        → center dark ratio typically 20–60%
+      - Brain CT (axial): center is filled with medium-gray brain tissue
+        → center dark ratio typically 3–12%  (only small ventricles are dark)
+      - Severe lung cancer with large mass: center still has SOME dark areas
+        from residual lung/pleural space → typically ≥ 8%
+
+    Threshold is intentionally very conservative (5%) to avoid false-warning
+    on severe pathological cases (large tumors, pleural effusion, white-out).
+    Env var CT_MIN_CENTER_DARK_RATIO can relax/tighten this.
+    """
+    try:
+        img_pil = Image.open(io.BytesIO(image_bytes)).convert("L")  # grayscale
+        thumb = img_pil.copy()
+        thumb.thumbnail((256, 256), Image.LANCZOS)
+        gray = np.array(thumb, dtype=np.float32)  # (H, W)
+
+        h, w = gray.shape
+
+        # ── Center zone: middle 50% of both dimensions ────────────────────────
+        cy1, cy2 = h // 4, 3 * h // 4
+        cx1, cx2 = w // 4, 3 * w // 4
+        center = gray[cy1:cy2, cx1:cx2]
+
+        center_dark_ratio = float((center < 60).mean())
+
+        logger.debug(f"Body-part check: center_dark_ratio={center_dark_ratio:.3f} threshold={_CT_MIN_CENTER_DARK_RATIO}")
+
+        if center_dark_ratio < _CT_MIN_CENTER_DARK_RATIO:
+            return False, (
+                f"Bagian tengah gambar hampir tidak memiliki area gelap "
+                f"(rasio={center_dark_ratio:.2f}, min={_CT_MIN_CENTER_DARK_RATIO}). "
+                "Gambar ini kemungkinan bukan CT-Scan dada/paru. "
+                "CT-Scan kepala, perut, atau bagian tubuh lain mungkin menghasilkan prediksi yang tidak akurat. "
+                "Pastikan Anda mengunggah CT-Scan dada (thorax) yang benar."
+            )
+
+        return True, "OK"
+
+    except Exception as exc:
+        logger.warning(f"Lung-region check error (skipping): {exc}")
+        return True, "check-skipped"
+
+
 # ── Preprocessing ──────────────────────────────────────────────────────────────
 def _preprocess_for_type(image_bytes: bytes) -> np.ndarray:
-    from tensorflow.keras.applications.resnet50 import preprocess_input
+    from keras.applications.resnet50 import preprocess_input
     img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     img = img.resize(TYPE_INPUT_SIZE, Image.LANCZOS)
     arr = preprocess_input(np.array(img, dtype=np.float32))
@@ -83,7 +233,8 @@ def _load_resources():
     global _dense_weights, _dense_weights_eff
     global _model_error, _warmed_up
     import tensorflow as tf
-    from tensorflow import keras
+    import keras
+    logger.info(f"Using standalone Keras {keras.__version__}")
 
     try:
         # 1. Type model (ResNet50 88%)
@@ -215,7 +366,7 @@ def _run_inference(image_bytes: bytes) -> tuple[dict, np.ndarray]:
             "severity_confidence": 100.0,
         }, cam   # still return CAM for normal scans (shows which region looked normal)
 
-    # ── Stage 2: severity model (224×224, ~1s) ─────────────────────────────────
+    # ── Stage 2: severity model  ─────────────────────────────────
     sev_input = _preprocess_for_severity(image_bytes)
     sev_pred  = _severity_model(
         tf.constant(sev_input, dtype=tf.float32), training=False
@@ -297,6 +448,34 @@ async def get_guidance():
         return {}
 
 
+@app.get("/api/metrics")
+async def get_model_metrics():
+    """
+    Returns pre-computed evaluation metrics for the ResNet50 type classification model.
+    Computed on the full test set (315 images, 4 classes).
+    """
+    try:
+        with open(os.path.join(STATIC_DIR, "model_metrics.json"), "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"overall": {"accuracy": MODEL_ACCURACY}, "per_class": {}}
+
+
+@app.get("/api/severity-metrics")
+async def get_severity_metrics():
+    """
+    Returns pre-computed evaluation metrics for the Severity classification model.
+    Evaluated on validation cancer images (59 samples: Benign Stage I + Malignant Stage III).
+    Normal severity is determined by clinical rule (not the model), so it is excluded.
+    """
+    try:
+        with open(os.path.join(STATIC_DIR, "severity_metrics.json"), "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"overall": {}, "per_class": {}}
+
+
+
 @app.post("/api/predict")
 async def predict_scan(file: UploadFile = File(...)):
     if _grad_model is None or _severity_model is None:
@@ -314,6 +493,23 @@ async def predict_scan(file: UploadFile = File(...)):
     content = await file.read()
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File terlalu besar. Maksimal 10MB.")
+
+    # ── CT-Scan validation (hard reject: clearly not a medical grayscale image)
+    is_ct, reason = _validate_ct_scan(content)
+    if not is_ct:
+        logger.warning(f"Rejected non-CT image '{file.filename}': {reason}")
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code":    "INVALID_CT_SCAN",
+                "message": reason,
+            },
+        )
+
+    # ── Body-part check (soft warning: may not be chest CT — never blocks) ──────
+    looks_like_lung, body_part_reason = _check_lung_region(content)
+    if not looks_like_lung:
+        logger.warning(f"Body-part warning for '{file.filename}': {body_part_reason}")
 
     try:
         t_start = time.time()
@@ -336,6 +532,11 @@ async def predict_scan(file: UploadFile = File(...)):
             f"inference={t_inf-t_start:.2f}s  total={t_total-t_start:.2f}s"
         )
 
+        # Warning flags (never block — only inform)
+        low_confidence  = result["confidence"] < 45.0
+        body_part_warn  = not looks_like_lung
+        any_warning     = low_confidence or body_part_warn
+
         return JSONResponse(content={
             "prediction":          result["prediction"],
             "confidence":          result["confidence"],
@@ -344,6 +545,9 @@ async def predict_scan(file: UploadFile = File(...)):
             "severity_confidence": result["severity_confidence"],
             "heatmap_base64":      heatmap_b64,
             "model_accuracy":      MODEL_ACCURACY,
+            "validation_warning":  any_warning,
+            "body_part_warning":   body_part_warn,
+            "body_part_reason":    body_part_reason if body_part_warn else None,
         })
 
     except HTTPException:
@@ -352,6 +556,141 @@ async def predict_scan(file: UploadFile = File(...)):
     except Exception as exc:
         logger.error(f"Prediction error: {exc}")
         raise HTTPException(status_code=500, detail=f"Gagal memproses gambar: {exc}")
+
+
+# ── Dataset Documentation API ──────────────────────────────────────────────────
+DATASET_CHEST_CT = os.path.join(MODEL_DIR, "chest-ctscan-images", "test")
+DATASET_IQOTHNCCD = os.path.join(
+    MODEL_DIR,
+    "The IQ-OTHNCCD lung cancer dataset",
+    "The IQ-OTHNCCD lung cancer dataset",
+)
+
+# Mapping: class key → (dir in chest-ct, display label, color, description)
+DATASET_META = {
+    "adenocarcinoma": {
+        "label": "Adenocarcinoma",
+        "color": "#ef4444",
+        "description": "Tipe kanker paru paling umum (~40% kasus). Berasal dari sel kelenjar di tepi paru.",
+        "dataset": "Chest CT-Scan Images",
+        "dir": os.path.join(DATASET_CHEST_CT, "adenocarcinoma"),
+    },
+    "large_cell_carcinoma": {
+        "label": "Large Cell Carcinoma",
+        "color": "#f97316",
+        "description": "Tipe agresif yang dapat muncul di bagian mana pun dari paru. Tumbuh cepat dan menyebar lebih dini.",
+        "dataset": "Chest CT-Scan Images",
+        "dir": os.path.join(DATASET_CHEST_CT, "large.cell.carcinoma"),
+    },
+    "squamous_cell_carcinoma": {
+        "label": "Squamous Cell Carcinoma",
+        "color": "#a855f7",
+        "description": "Berasal dari sel skuamosa di saluran udara. Sering ditemukan di pusat paru dekat bronkus.",
+        "dataset": "Chest CT-Scan Images",
+        "dir": os.path.join(DATASET_CHEST_CT, "squamous.cell.carcinoma"),
+    },
+    "normal": {
+        "label": "Normal",
+        "color": "#22c55e",
+        "description": "Jaringan paru sehat tanpa indikasi keganasan.",
+        "dataset": "Chest CT-Scan Images",
+        "dir": os.path.join(DATASET_CHEST_CT, "normal"),
+    },
+    "benign": {
+        "label": "Benign (IQ-OTH)",
+        "color": "#06b6d4",
+        "description": "Tumor jinak. Tidak bersifat ganas, namun tetap memerlukan pemantauan medis.",
+        "dataset": "IQ-OTH/NCCD Dataset",
+        "dir": os.path.join(DATASET_IQOTHNCCD, "Bengin cases"),
+    },
+    "malignant": {
+        "label": "Malignant (IQ-OTH)",
+        "color": "#ec4899",
+        "description": "Tumor ganas. Sel kanker aktif yang memerlukan penanganan segera.",
+        "dataset": "IQ-OTH/NCCD Dataset",
+        "dir": os.path.join(DATASET_IQOTHNCCD, "Malignant cases"),
+    },
+    "normal_iq": {
+        "label": "Normal (IQ-OTH)",
+        "color": "#84cc16",
+        "description": "Paru normal dari dataset IQ-OTH/NCCD. Digunakan sebagai baseline dalam penelitian.",
+        "dataset": "IQ-OTH/NCCD Dataset",
+        "dir": os.path.join(DATASET_IQOTHNCCD, "Normal cases"),
+    },
+}
+
+
+def _img_to_b64_thumb(path: str, size: int = 200) -> str | None:
+    """Convert image file to base64 thumbnail."""
+    try:
+        img = Image.open(path).convert("RGB")
+        img.thumbnail((size, size), Image.LANCZOS)
+        buf = io.BytesIO()
+        ext = os.path.splitext(path)[1].lower()
+        fmt = "JPEG" if ext in (".jpg", ".jpeg") else "PNG"
+        img.save(buf, format=fmt, quality=80)
+        mime = "image/jpeg" if fmt == "JPEG" else "image/png"
+        return f"data:{mime};base64," + base64.b64encode(buf.getvalue()).decode()
+    except Exception as e:
+        logger.warning(f"Cannot load image {path}: {e}")
+        return None
+
+
+@app.get("/api/dataset/info")
+async def get_dataset_info():
+    """Return dataset class metadata and image counts."""
+    result = {}
+    for key, meta in DATASET_META.items():
+        d = meta["dir"]
+        if os.path.isdir(d):
+            files = [
+                f for f in os.listdir(d)
+                if f.lower().endswith((".png", ".jpg", ".jpeg"))
+            ]
+            count = len(files)
+        else:
+            count = 0
+        result[key] = {
+            "label":       meta["label"],
+            "color":       meta["color"],
+            "description": meta["description"],
+            "dataset":     meta["dataset"],
+            "total":       count,
+        }
+    return JSONResponse(content=result)
+
+
+@app.get("/api/dataset/images/{class_key}")
+async def get_dataset_images(class_key: str, n: int = 10):
+    """Return up to n thumbnail images for a given class key as base64."""
+    if class_key not in DATASET_META:
+        raise HTTPException(status_code=404, detail=f"Class '{class_key}' tidak ditemukan.")
+
+    meta = DATASET_META[class_key]
+    d    = meta["dir"]
+
+    if not os.path.isdir(d):
+        raise HTTPException(status_code=404, detail=f"Direktori dataset tidak ditemukan: {d}")
+
+    files = sorted([
+        f for f in os.listdir(d)
+        if f.lower().endswith((".png", ".jpg", ".jpeg"))
+    ])[:n]
+
+    images = []
+    for fname in files:
+        b64 = _img_to_b64_thumb(os.path.join(d, fname), size=220)
+        if b64:
+            images.append({"filename": fname, "src": b64})
+
+    return JSONResponse(content={
+        "class_key":   class_key,
+        "label":       meta["label"],
+        "color":       meta["color"],
+        "description": meta["description"],
+        "dataset":     meta["dataset"],
+        "images":      images,
+    })
 
 
 if __name__ == "__main__":

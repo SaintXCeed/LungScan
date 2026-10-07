@@ -1,0 +1,37 @@
+﻿
+Loading severity model...
+  input=(None, 224, 224, 3)
+
+Collecting cancer images (excluding normal ΓÇö handled by clinical rule)...
+  Benign       | adenocarcinoma_left.lower.lobe_T2_N0_M0_Ib              (23 imgs)
+  Malignant    | large.cell.carcinoma_left.hilum_T2_N2_M0_IIIa           (21 imgs)
+  Malignant    | squamous.cell.carcinoma_left.hilum_T1_N2_M0_IIIa        (15 imgs)
+
+Total cancer samples: 59
+Distribution: {'Normal': 0, 'Benign': 23, 'Malignant': 36}
+
+Running inference...
+
+Confusion Matrix (rows=actual, cols=predicted):
+             Normal     Benign  Malignant
+  Normal             0          0          0
+  Benign             0          3         20
+  Malignant          0          3         33
+  Normal: P=0.0%  R=0.0%  F1=0.0%  n=0
+  Benign: P=50.0%  R=13.0%  F1=20.7%  n=23
+  Malignant: P=62.3%  R=91.7%  F1=74.2%  n=36
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö
+ÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  Accuracy (cancer set): 61.02%
+  Weighted Precision:    57.48%
+  Weighted Recall:       61.02%
+  Weighted F1-Score:     53.32%
+  Macro Precision:       56.13%
+  Macro Recall:          52.36%
+  Macro F1-Score:        47.42%
+  Total eval samples:    59
+
+Saved ΓåÆ backend\static\severity_metrics.json
+
+

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -91,24 +91,24 @@ export default function DoctorFinder() {
   }
 
   return (
-    <div className="flex-1 w-full relative overflow-x-hidden bg-[#0a0f1c]">
-      <main className="relative z-10 w-full bg-navy-900 flex flex-col items-center rounded-b-[2.5rem] border-b border-white/5 shadow-2xl pb-12">
+    <div className="flex-1 w-full relative overflow-x-hidden bg-white dark:bg-[#0a0f1c] transition-colors duration-200">
+      <main className="relative z-10 w-full bg-slate-50 dark:bg-navy-900 flex flex-col items-center rounded-b-[2.5rem] border-b border-slate-200 dark:border-white/5 shadow-2xl pb-12 transition-colors duration-200">
         <div className="w-full max-w-7xl mx-auto px-6 py-12 flex flex-col">
           <div className="mb-8">
             <h1 className="text-4xl font-bold mb-2">Temukan Dokter Spesialis</h1>
-            <p className="text-gray-400">Peta sebaran dokter spesialis paru dan onkologi di Indonesia.</p>
+            <p className="text-slate-600 dark:text-gray-400">Peta sebaran dokter spesialis paru dan onkologi di Indonesia.</p>
           </div>
 
           {/* Search */}
           <div className="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row gap-4 mb-8">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-gray-400" />
               <input
                 type="text"
                 placeholder="Cari nama, kota, atau fasilitas..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full bg-navy-900 border border-white/10 rounded-xl py-3 pl-12 pr-4 text-white focus:outline-none focus:border-emerald-500 transition-colors"
+                className="w-full bg-slate-100 dark:bg-navy-900 border border-slate-300 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 transition-colors"
               />
             </div>
             <div className="flex gap-2">
@@ -120,7 +120,7 @@ export default function DoctorFinder() {
                     'px-6 py-3 rounded-xl border text-sm font-medium transition-colors',
                     typeFilter === t
                       ? 'bg-emerald-500 border-emerald-500 text-white'
-                      : 'bg-surface border-white/10 text-gray-400 hover:text-white'
+                      : 'bg-white dark:bg-surface border-slate-300 dark:border-white/10 text-slate-600 hover:text-slate-900 dark:text-gray-400 dark:hover:text-white'
                   )}
                 >{t === 'All' ? 'Semua' : t}</button>
               ))}
@@ -131,12 +131,12 @@ export default function DoctorFinder() {
           <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-8 h-[600px]">
             {/* List */}
             <div className="lg:col-span-1 glass-panel rounded-3xl overflow-hidden flex flex-col h-full">
-              <div className="p-5 border-b border-white/10 bg-surface/50">
+              <div className="p-5 border-b border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-surface/50">
                 <h3 className="font-semibold">{filtered.length} Dokter Ditemukan</h3>
               </div>
               <div className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar">
                 {filtered.length === 0 && (
-                  <p className="p-6 text-center text-gray-500 text-sm">Tidak ada dokter ditemukan.</p>
+                  <p className="p-6 text-center text-slate-500 dark:text-gray-500 text-sm">Tidak ada dokter ditemukan.</p>
                 )}
                 {filtered.map(d => {
                   const active = selectedId === d.id;
@@ -148,30 +148,30 @@ export default function DoctorFinder() {
                       className={clsx(
                         'p-4 rounded-2xl border cursor-pointer transition-all duration-200',
                         active
-                          ? 'bg-emerald-500/10 border-emerald-500 shadow-[0_0_16px_rgba(16,185,129,0.15)]'
-                          : 'bg-surface border-white/5 hover:border-emerald-500/40'
+                          ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-500 shadow-[0_0_16px_rgba(16,185,129,0.15)]'
+                          : 'bg-white dark:bg-surface border-slate-200 dark:border-white/5 hover:border-emerald-500/40'
                       )}
                     >
                       <div className="flex justify-between items-start gap-2 mb-1">
-                        <h4 className={clsx('font-bold text-sm leading-snug', active ? 'text-emerald-400' : 'text-white')}>
+                        <h4 className={clsx('font-bold text-sm leading-snug', active ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white')}>
                           {d.name}
                         </h4>
                         <span className={clsx(
                           'text-xs px-2 py-0.5 rounded border font-medium shrink-0',
                           d.type === 'BPJS'
-                            ? 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
-                            : 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                            ? 'bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30'
+                            : 'bg-amber-50 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30'
                         )}>{d.type}</span>
                       </div>
                       <p className="text-emerald-500 text-xs font-medium mb-3">{d.specialty}</p>
-                      <div className="space-y-1.5 text-xs text-gray-400">
+                      <div className="space-y-1.5 text-xs text-slate-600 dark:text-gray-400">
                         <span className="flex items-start gap-1.5"><Building className="w-3.5 h-3.5 mt-0.5 shrink-0" />{d.facility}</span>
                         <span className="flex items-start gap-1.5"><MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />{d.city}, {d.province}</span>
                         <span className="flex items-start gap-1.5"><Phone className="w-3.5 h-3.5 mt-0.5 shrink-0" />{d.phone}</span>
                       </div>
                       {active && (
                         <div className="mt-3 pt-3 border-t border-emerald-500/20 flex items-center justify-between">
-                          <p className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                          <p className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                             <Navigation className="w-3 h-3" /> Lokasi di peta
                           </p>
                           <a
@@ -179,7 +179,7 @@ export default function DoctorFinder() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={e => e.stopPropagation()}
-                            className="flex items-center gap-1 text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
+                            className="flex items-center gap-1 text-xs bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-900 dark:text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
                           >
                             <ExternalLink className="w-3 h-3" />
                             Buka di Google Maps
@@ -193,7 +193,7 @@ export default function DoctorFinder() {
             </div>
 
             {/* Map */}
-            <div className="lg:col-span-2 rounded-3xl overflow-hidden border border-white/10 h-full relative" style={{ zIndex: 0 }}>
+            <div className="lg:col-span-2 rounded-3xl overflow-hidden border border-slate-200 dark:border-white/10 h-full relative" style={{ zIndex: 0 }}>
               <MapContainer center={[-0.789275, 113.921327]} zoom={5} style={{ height: '100%', width: '100%' }}>
                 <TileLayer
                   attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

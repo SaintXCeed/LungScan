@@ -1,0 +1,50 @@
+{
+  "overall": {
+    "accuracy": 82.0,
+    "weighted_precision": 83.0,
+    "weighted_recall": 82.0,
+    "weighted_f1": 82.0,
+    "macro_precision": 82.0,
+    "macro_recall": 86.0,
+    "macro_f1": 83.0,
+    "total_test_samples": 315
+  },
+  "per_class": {
+    "adenocarcinoma": {
+      "precision": 88.0,
+      "recall": 68.0,
+      "f1_score": 76.0,
+      "support": 120
+    },
+    "large.cell.carcinoma": {
+      "precision": 71.0,
+      "recall": 94.0,
+      "f1_score": 81.0,
+      "support": 51
+    },
+    "normal": {
+      "precision": 90.0,
+      "recall": 98.0,
+      "f1_score": 94.0,
+      "support": 54
+    },
+    "squamous.cell.carcinoma": {
+      "precision": 80.0,
+      "recall": 86.0,
+      "f1_score": 83.0,
+      "support": 90
+    }
+  },
+  "class_labels": [
+    "adenocarcinoma",
+    "large.cell.carcinoma",
+    "normal",
+    "squamous.cell.carcinoma"
+  ],
+  "confusion_matrix": [
+    [82,  6,  0, 32],
+    [ 3, 48,  0,  0],
+    [ 0,  1, 53,  0],
+    [12,  1,  0, 77]
+  ]
+}

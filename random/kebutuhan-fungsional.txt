@@ -1,0 +1,74 @@
+Berikut adalah penyusunan draf untuk sub-bab **6. Analisis Matematis dan Perhitungan Data Sampel**. Bagian ini disusun secara khusus untuk memenuhi persyaratan pedoman skripsi fakultasmu yang mewajibkan pembuktian matematis secara manual.
+
+Di sini, kita akan mendemonstrasikan tiga tahapan matematis paling krusial di dalam arsitektur LungScan AI: (1) Normalisasi Piksel, (2) Operasi Konvolusi & Aktivasi ReLU, dan (3) Kalkulasi *Heatmap* Grad-CAM berdasarkan matriks fitur.
+
+Silakan salin teks di bawah ini ke dalam draf skripsimu:
+
+---
+
+**6. Analisis Matematis dan Perhitungan Data Sampel**
+
+Sebagai pemenuhan terhadap standar spesifikasi rekayasa sistem yang memuat pemodelan algoritma, bagian ini menguraikan fondasi matematis dari mesin inferensi kecerdasan buatan LungScan AI. Sistem ini beroperasi menggunakan arsitektur *Convolutional Neural Network* (CNN) dan algoritma *Class Activation Mapping* (Grad-CAM). Untuk mendemonstrasikan logika komputasional tersebut, berikut disajikan perhitungan manual menggunakan representasi sampel matriks citra sederhana berukuran $3 \times 3$ piksel.
+
+**a. Perhitungan Prapemrosesan dan Normalisasi Citra**
+Sebelum citra CT-Scan dimasukkan ke dalam model, setiap nilai intensitas piksel (berkisar antara 0 hingga 255) harus dinormalisasi menjadi rentang probabilitas 0 hingga 1. Rumus matematis untuk normalisasi adalah:
+
+$$X_{norm} = \frac{X}{255}$$
+
+Misalkan terdapat sampel masukan berupa matriks piksel saluran tunggal ($I$) berukuran $3 \times 3$ sebagai berikut:
+
+$$I = \begin{bmatrix} 120 & 50 & 0 \\ 200 & 255 & 100 \\ 10 & 80 & 150 \end{bmatrix}$$
+
+Maka, hasil matriks setelah proses normalisasi ($I_{norm}$) adalah:
+
+$$I_{norm} = \begin{bmatrix} \frac{120}{255} & \frac{50}{255} & \frac{0}{255} \\ \frac{200}{255} & \frac{255}{255} & \frac{100}{255} \\ \frac{10}{255} & \frac{80}{255} & \frac{150}{255} \end{bmatrix} = \begin{bmatrix} 0.47 & 0.19 & 0.00 \\ 0.78 & 1.00 & 0.39 \\ 0.03 & 0.31 & 0.58 \end{bmatrix}$$
+
+**b. Operasi Konvolusi (Convolution) dan Aktivasi ReLU**
+Setelah citra dinormalisasi, operasi utama pada lapisan *deep learning* adalah konvolusi, di mana matriks citra dikalikan dengan matriks penyaring (*kernel* / *filter*) untuk mengekstrak fitur (*feature map*). Rumus operasi konvolusi 2D adalah:
+
+$$S(i, j) = (I * K)(i, j) = \sum_m \sum_n I_{norm}(i+m, j+n) K(m, n)$$
+
+Misalkan model menggunakan *Kernel* ($K$) pendeteksi tepi berukuran $2 \times 2$:
+
+$$K = \begin{bmatrix} 1 & 0 \\ -1 & 1 \end{bmatrix}$$
+
+Perhitungan nilai konvolusi untuk piksel posisi sudut kiri atas (mengalikan $K$ dengan area $2 \times 2$ kiri atas $I_{norm}$) adalah:
+
+
+$$S(0,0) = (0.47 \times 1) + (0.19 \times 0) + (0.78 \times -1) + (1.00 \times 1)$$
+
+$$S(0,0) = 0.47 + 0 - 0.78 + 1.00 = 0.69$$
+
+Setelah seluruh area dihitung, nilai tersebut dilewatkan pada fungsi aktivasi *Rectified Linear Unit* (ReLU) untuk menghilangkan nilai negatif (menjaga non-linearitas). Rumus ReLU adalah:
+
+$$f(x) = \max(0, x)$$
+
+Jika suatu hasil konvolusi bernilai negatif (misal: -0.25), maka ReLU akan mengubahnya menjadi 0. Operasi ini terus diulang pada jutaan parameter di dalam arsitektur model.
+
+**c. Perhitungan Pembentukan Heatmap Grad-CAM**
+Pada sistem LungScan AI, transparansi keputusan medis divisualisasikan menggunakan Grad-CAM. Menurut implementasi pada kode peladen, algoritma ini mengalikan peta fitur konvolusi lapisan terakhir dengan bobot efektif (*BN-corrected weights*) dari kelas yang diprediksi. Rumus dasarnya adalah kombinasi linear dari peta fitur, dilanjutkan dengan fungsi aktivasi ReLU untuk mengambil pengaruh positif saja:
+
+$$L_{Grad-CAM}^c = ReLU\left(\sum_k w_k^c A^k\right)$$
+
+Sebagai contoh perhitungan manual, asumsikan lapisan konvolusi terakhir menghasilkan dua peta fitur ($A^1$ dan $A^2$) berukuran $2 \times 2$:
+
+
+$$A^1 = \begin{bmatrix} 0.5 & 0.2 \\ 0.1 & 0.0 \end{bmatrix}, \quad A^2 = \begin{bmatrix} 0.1 & 0.8 \\ 0.3 & 0.4 \end{bmatrix}$$
+
+Asumsikan peladen mengklasifikasikan citra sebagai *Squamous Cell Carcinoma* (kelas $c$), dengan nilai bobot kelas tersebut dari model adalah $w_1^c = 0.6$ dan $w_2^c = -0.2$. Maka kalkulasi *heatmap*-nya adalah:
+
+$$CAM = (0.6 \times A^1) + (-0.2 \times A^2)$$
+
+$$CAM = \begin{bmatrix} 0.30 & 0.12 \\ 0.06 & 0.00 \end{bmatrix} + \begin{bmatrix} -0.02 & -0.16 \\ -0.06 & -0.08 \end{bmatrix}$$
+
+$$CAM = \begin{bmatrix} 0.28 & -0.04 \\ 0.00 & -0.08 \end{bmatrix}$$
+
+Sesuai dengan kode komputasi peladen (`cam = np.maximum(cam, 0)`), sistem menerapkan aktivasi ReLU:
+
+$$ReLU(CAM) = \begin{bmatrix} 0.28 & 0 \\ 0 & 0 \end{bmatrix}$$
+
+Langkah terakhir adalah menormalisasi matriks *heatmap* tersebut ke rentang 0 hingga 1 menggunakan nilai maksimal komputasi (`cam = cam / cam.max()`):
+
+$$Heatmap_{final} = \frac{\begin{bmatrix} 0.28 & 0 \\ 0 & 0 \end{bmatrix}}{0.28} = \begin{bmatrix} 1.0 & 0 \\ 0 & 0 \end{bmatrix}$$
+
+Angka 1.0 pada matriks tersebut mengindikasikan area dengan probabilitas lesi tertinggi, yang selanjutnya akan dikonversi oleh peladen menjadi piksel warna merah terang (*Base64 PNG*) dan dirender persis di atas visual paru-paru pada antarmuka aplikasi klien.

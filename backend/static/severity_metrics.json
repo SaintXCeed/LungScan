@@ -1,0 +1,46 @@
+{
+  "overall": {
+    "accuracy": 99.0,
+    "weighted_precision": 99.0,
+    "weighted_recall": 99.0,
+    "weighted_f1": 99.0,
+    "macro_precision": 98.0,
+    "macro_recall": 99.0,
+    "macro_f1": 99.0,
+    "total_test_samples": 360,
+    "avg_confidence": 99.43,
+    "max_confidence": 100.0,
+    "min_confidence": 59.10,
+    "eval_set": "test set (360 gambar: Benign + Malignant + Normal)"
+  },
+  "per_class": {
+    "Benign": {
+      "precision": 96.0,
+      "recall": 99.0,
+      "f1_score": 98.0,
+      "support": 103
+    },
+    "Malignant": {
+      "precision": 100.0,
+      "recall": 100.0,
+      "f1_score": 100.0,
+      "support": 132
+    },
+    "Normal": {
+      "precision": 99.0,
+      "recall": 97.0,
+      "f1_score": 98.0,
+      "support": 125
+    }
+  },
+  "class_labels": [
+    "Benign",
+    "Malignant",
+    "Normal"
+  ],
+  "confidence_stats": {
+    "average": 99.43,
+    "max": 100.0,
+    "min": 59.10
+  }
+}

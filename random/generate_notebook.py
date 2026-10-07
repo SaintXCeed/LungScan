@@ -1,0 +1,422 @@
+import json
+
+def create_markdown_cell(source):
+    return {
+        "cell_type": "markdown",
+        "metadata": {},
+        "source": [line + "\n" for line in source.split("\n")]
+    }
+
+def create_code_cell(source):
+    return {
+        "cell_type": "code",
+        "execution_count": None,
+        "metadata": {},
+        "outputs": [],
+        "source": [line + "\n" for line in source.split("\n")]
+    }
+
+def create_refactored_notebook():
+    nb = {
+        "cells": [],
+        "metadata": {
+            "kernelspec": {
+                "display_name": "Python 3",
+                "language": "python",
+                "name": "python3"
+            },
+            "language_info": {
+                "codemirror_mode": {
+                    "name": "ipython",
+                    "version": 3
+                },
+                "file_extension": ".py",
+                "mimetype": "text/x-python",
+                "name": "python",
+                "nbconvert_exporter": "python",
+                "pygments_lexer": "ipython3",
+                "version": "3.8.0"
+            }
+        },
+        "nbformat": 4,
+        "nbformat_minor": 4
+    }
+
+    # 1. Imports
+    nb["cells"].append(create_markdown_cell("# 1. Imports\nKonsolidasi semua library yang digunakan ke dalam satu sel untuk kemudahan manajemen."))
+    nb["cells"].append(create_code_cell("""import os
+import shutil
+import random
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from PIL import Image, ImageEnhance
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+import torch.onnx
+
+import torchvision.transforms as transforms
+from torchvision.datasets import ImageFolder
+from torch.utils.data import DataLoader
+import torchvision.models as models
+
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, classification_report, confusion_matrix"""))
+
+    # 2. Data Collection
+    nb["cells"].append(create_markdown_cell("# 2. Data Preparation\nMenggunakan dataset lokal yang sudah tersedia dan memverifikasi jumlah gambar aslinya."))
+    nb["cells"].append(create_code_cell("""# Gunakan path relatif ke dataset lokal
+base_dir = './The IQ-OTHNCCD lung cancer dataset/The IQ-OTHNCCD lung cancer dataset'
+
+print("Path to dataset files:", base_dir)
+class_names = ['Bengin cases', 'Malignant cases', 'Normal cases']
+
+for class_name in class_names:
+    class_folder = os.path.join(base_dir, class_name)
+    files = [f for f in os.listdir(class_folder)]
+    print(f"Number of images in {class_name}: {len(files)}")"""))
+
+    # 3. Data Splitting
+    nb["cells"].append(create_markdown_cell("# 3. Data Splitting\nMemisahkan data menjadi Train (80%) dan Validation (20%) secara fisik ke dalam folder terpisah **sebelum** dilakukan augmentasi untuk mencegah data leakage."))
+    nb["cells"].append(create_code_cell("""train_dir = "./dataset/train"
+val_dir = "./dataset/val"
+
+# Reset directories
+for d in [train_dir, val_dir]:
+    if os.path.exists(d):
+        shutil.rmtree(d)
+    os.makedirs(d)
+    for c in class_names:
+        os.makedirs(os.path.join(d, c))
+
+train_ratio = 0.8
+
+for class_name in class_names:
+    class_folder = os.path.join(base_dir, class_name)
+    files = [f for f in os.listdir(class_folder) if os.path.isfile(os.path.join(class_folder, f))]
+    random.shuffle(files)
+    
+    split_idx = int(len(files) * train_ratio)
+    train_files = files[:split_idx]
+    val_files = files[split_idx:]
+    
+    for f in train_files:
+        shutil.copy(os.path.join(class_folder, f), os.path.join(train_dir, class_name, f))
+    for f in val_files:
+        shutil.copy(os.path.join(class_folder, f), os.path.join(val_dir, class_name, f))
+        
+    print(f"{class_name}: {len(train_files)} train, {len(val_files)} val")"""))
+
+    # 4. Data Augmentation
+    nb["cells"].append(create_markdown_cell("# 4. Data Augmentation (Hanya pada Data Latih)\nMelakukan augmentasi gambar **hanya pada folder train** untuk menyeimbangkan jumlah data tiap kelas (misal menjadi 600 gambar per kelas). Data validasi dibiarkan apa adanya agar pengujian tidak bias."))
+    nb["cells"].append(create_code_cell("""target_count = 600
+img_size = (512, 512)
+
+def get_random_transform():
+    options = [
+        lambda img: img.transpose(Image.FLIP_LEFT_RIGHT),
+        lambda img: img.transpose(Image.FLIP_TOP_BOTTOM),
+        lambda img: img.rotate(random.uniform(-25, 25)),
+        lambda img: ImageEnhance.Contrast(img).enhance(random.uniform(1.2, 1.8)),
+        lambda img: ImageEnhance.Color(img).enhance(random.uniform(1.2, 2.0)),
+        lambda img: ImageEnhance.Sharpness(img).enhance(random.uniform(1.5, 2.5))
+    ]
+    return random.choice(options)
+
+def augment_train_data(class_name, target_count):
+    class_dst = os.path.join(train_dir, class_name)
+    images = [f for f in os.listdir(class_dst) if os.path.isfile(os.path.join(class_dst, f))]
+    original_count = len(images)
+
+    extra_needed = target_count - original_count
+    if extra_needed <= 0:
+        return
+
+    print(f"Need to generate {extra_needed} new images for {class_name} in train set")
+
+    for i in range(extra_needed):
+        img_name = random.choice(images)
+        try:
+            with Image.open(os.path.join(class_dst, img_name)) as img:
+                img = img.convert('RGB').resize(img_size)
+                transformed_img = get_random_transform()(img)
+                save_name = f"aug{i}_{img_name}"
+                transformed_img.save(os.path.join(class_dst, save_name))
+        except Exception as err:
+            print(f"Error while augmenting: {err}")
+
+for class_name in class_names:
+    augment_train_data(class_name, target_count)
+
+print("Augmentation complete for training data!")"""))
+
+    # 5. Data Loading
+    nb["cells"].append(create_markdown_cell("# 5. Data Loading\nMembuat dataset dan dataloader PyTorch menggunakan folder train dan val secara terpisah."))
+    nb["cells"].append(create_code_cell("""# Define data transformations
+# Note: Resize and Normalize are applied here. Random augmentation is already done physically.
+data_transforms = transforms.Compose([
+    transforms.Resize(img_size),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+
+train_dataset = ImageFolder(train_dir, transform=data_transforms)
+val_dataset = ImageFolder(val_dir, transform=data_transforms)
+
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+
+print(f"Dataset prepared: {len(train_dataset)} training samples, {len(val_dataset)} validation samples.")"""))
+
+    # 6. Model Definition
+    nb["cells"].append(create_markdown_cell("# 6. Model Setup\nMendefinisikan arsitektur ResNet50 dan mengganti layer terakhir untuk 3 kelas."))
+    nb["cells"].append(create_code_cell("""# Load pretrained ResNet50
+resnet50 = models.resnet50(weights='DEFAULT')
+
+num_ftrs = resnet50.fc.in_features
+resnet50.fc = nn.Linear(num_ftrs, 3)
+
+# Move model to GPU if available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print("Using device:", device)
+resnet50 = resnet50.to(device)"""))
+
+    # 7. Optimizer & Loss
+    nb["cells"].append(create_markdown_cell("# 7. Training Setup\nTermasuk Scheduler untuk menurunkan Learning Rate (LR) dan teknik penyimpanan model terbaik (Best Model Checkpoint) serta Early Stopping."))
+    nb["cells"].append(create_code_cell("""criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(resnet50.parameters(), lr=0.0001)
+
+# Reduce LR on Plateau: menurunkan LR ketika validasi loss tidak kunjung membaik
+scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=3)"""))
+
+    # 8. Training Loop
+    nb["cells"].append(create_markdown_cell("# 8. Training Loop\nMelatih model dengan implementasi **Early Stopping** dan menyimpan **Best Weights** berdasarkan Validation Loss terendah."))
+    nb["cells"].append(create_code_cell("""epochs = 15
+patience = 5  # Early stopping patience
+best_val_loss = float('inf')
+epochs_no_improve = 0
+
+rn_train_losses = []
+rn_train_accuracies = []
+rn_val_losses = []
+rn_val_accuracies = []
+
+for epoch in range(epochs):
+    resnet50.train()
+    running_loss = 0.0
+    correct = 0
+    total = 0
+
+    for inputs, labels in train_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
+
+        optimizer.zero_grad()
+        outputs = resnet50(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+
+        running_loss += loss.item()
+
+        _, preds = torch.max(outputs, 1)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+
+    epoch_loss = running_loss / len(train_loader)
+    epoch_acc = correct / total
+    rn_train_losses.append(epoch_loss)
+    rn_train_accuracies.append(epoch_acc)
+
+    # Validation loop
+    resnet50.eval()
+    val_loss = 0.0
+    val_correct = 0
+    val_total = 0
+    with torch.no_grad():
+        for inputs, labels in val_loader:
+            inputs, labels = inputs.to(device), labels.to(device)
+            outputs = resnet50(inputs)
+            loss = criterion(outputs, labels)
+            val_loss += loss.item()
+
+            _, preds = torch.max(outputs, 1)
+            val_correct += (preds == labels).sum().item()
+            val_total += labels.size(0)
+
+    avg_val_loss = val_loss / len(val_loader)
+    avg_val_acc = val_correct / val_total
+    rn_val_losses.append(avg_val_loss)
+    rn_val_accuracies.append(avg_val_acc)
+    
+    # Update scheduler
+    scheduler.step(avg_val_loss)
+
+    print(f"Epoch {epoch+1:02d} | Train Loss: {epoch_loss:.4f}, Train Acc: {epoch_acc:.4f} | Val Loss: {avg_val_loss:.4f}, Val Acc: {avg_val_acc:.4f}")
+    
+    # Checkpoint and Early Stopping
+    if avg_val_loss < best_val_loss:
+        best_val_loss = avg_val_loss
+        epochs_no_improve = 0
+        # Save best model
+        torch.save(resnet50.state_dict(), 'best_lung_cancer_resnet50.pth')
+        print(f"  >>> Val loss improved to {best_val_loss:.4f}, saved best model!")
+    else:
+        epochs_no_improve += 1
+        print(f"  --- No improvement for {epochs_no_improve} epochs.")
+        if epochs_no_improve >= patience:
+            print(f"\\nEarly stopping triggered after {epoch+1} epochs!")
+            break
+
+# Load best weights back into model
+print("\\nLoading best model weights...")
+resnet50.load_state_dict(torch.load('best_lung_cancer_resnet50.pth'))
+"""))
+
+    # 9. Evaluation
+    nb["cells"].append(create_markdown_cell("# 9. Model Evaluation & Visualisasi\nMenghitung metrik performa (Akurasi, Precision, Recall, F1-Score) pada iterasi (weights) terbaik."))
+    nb["cells"].append(create_code_cell("""resnet50.eval()
+all_preds = []
+all_labels = []
+correct = 0
+total = 0
+
+with torch.no_grad():
+    for images, labels in val_loader:
+        images, labels = images.to(device), labels.to(device)
+        outputs = resnet50(images)
+        _, preds = torch.max(outputs, 1)
+
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+
+        all_preds.extend(preds.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
+
+# Convert to numpy arrays
+y_true = np.array(all_labels)
+y_pred = np.array(all_preds)
+
+# Compute metrics
+resnet_metrics = {
+    'Accuracy': round(correct / total, 4),
+    'Precision': round(precision_score(y_true, y_pred, average='weighted', zero_division=0), 4),
+    'Recall': round(recall_score(y_true, y_pred, average='weighted', zero_division=0), 4),
+    'F1 Score': round(f1_score(y_true, y_pred, average='weighted', zero_division=0), 4)
+}
+
+print("Best ResNet50 Evaluation Metrics:")
+for key, value in resnet_metrics.items():
+    print(f"{key}: {value}")
+
+metrics_df = pd.DataFrame([resnet_metrics])
+display(metrics_df)
+
+# Accuracy plot
+actual_epochs = len(rn_train_accuracies)
+plt.figure(figsize=(12,5))
+plt.subplot(1, 2, 1)
+plt.plot(range(1, actual_epochs+1), rn_train_accuracies, label='Train Accuracy')
+plt.plot(range(1, actual_epochs+1), rn_val_accuracies, label='Validation Accuracy')
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.title("ResNet50 Accuracy")
+plt.legend()
+plt.grid(True)
+
+# Loss plot
+plt.subplot(1, 2, 2)
+plt.plot(range(1, actual_epochs+1), rn_train_losses, label='Train Loss')
+plt.plot(range(1, actual_epochs+1), rn_val_losses, label='Validation Loss')
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+plt.title("ResNet50 Loss")
+plt.legend()
+plt.grid(True)
+
+plt.tight_layout()
+plt.show()"""))
+
+    # 10. Classification Report & Confusion Matrix
+    nb["cells"].append(create_markdown_cell("# 10. Classification Report, Confusion Matrix & Confidence Statistics"))
+    nb["cells"].append(create_code_cell("""# 1. Classification Report per Class
+print("Detailed Classification Report:")
+report = classification_report(y_true, y_pred, target_names=class_names, zero_division=0)
+print(report)
+
+# 2. Confusion Matrix
+cm = confusion_matrix(y_true, y_pred)
+plt.figure(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', xticklabels=class_names, yticklabels=class_names)
+plt.title('Confusion Matrix')
+plt.xlabel('Predicted Label')
+plt.ylabel('True Label')
+plt.show()
+
+# 3. Calculate Confidence Scores
+all_confidences = []
+with torch.no_grad():
+    for images, labels in val_loader:
+        images = images.to(device)
+        outputs = resnet50(images)
+        probabilities = F.softmax(outputs, dim=1)
+        conf, _ = torch.max(probabilities, dim=1)
+        all_confidences.extend(conf.cpu().numpy())
+
+avg_confidence = np.mean(all_confidences)
+max_confidence = np.max(all_confidences)
+min_confidence = np.min(all_confidences)
+
+print(f"\\nModel Confidence Statistics:")
+print(f"- Average Confidence: {avg_confidence:.2%}")
+print(f"- Max Confidence: {max_confidence:.2%}")
+print(f"- Min Confidence: {min_confidence:.2%}")
+
+# Visualize confidence distribution
+plt.figure(figsize=(8, 5))
+plt.hist(all_confidences, bins=20, color='skyblue', edgecolor='black')
+plt.title("Distribution of Prediction Confidence")
+plt.xlabel("Confidence Score")
+plt.ylabel("Number of Samples")
+plt.grid(axis='y', linestyle='--', alpha=0.7)
+plt.show()"""))
+
+    # 11. Save Model
+    nb["cells"].append(create_markdown_cell("# 11. Save Model\nMenyimpan model ke dalam format final (sudah diambil versi terbaiknya) untuk Production (ONNX dan TorchScript)."))
+    nb["cells"].append(create_code_cell("""# Note: 'best_lung_cancer_resnet50.pth' was already saved during training.
+# Copy it to a definitive final name if needed:
+shutil.copy('best_lung_cancer_resnet50.pth', 'lung-cancer-severity.pth')
+
+# 1. TORCHSCRIPT (Recommended for PyTorch Production)
+example_input = torch.rand(1, 3, 512, 512).to(device)
+traced_script_module = torch.jit.trace(resnet50, example_input)
+traced_script_module.save("lung_cancer_model_production.pt")
+
+# 2. ONNX (Updated to Opset 18)
+torch.onnx.export(
+    resnet50, 
+    example_input, 
+    "lung_cancer_model.onnx", 
+    export_params=True, 
+    opset_version=18, 
+    do_constant_folding=True, 
+    input_names=['input'], 
+    output_names=['output'],
+    dynamic_axes={'input' : {0 : 'batch_size'}, 'output' : {0 : 'batch_size'}}
+)
+
+print("Production models exported successfully:")
+print("- lung-cancer-severity.pth (PyTorch Best State Dict)")
+print("- lung_cancer_model_production.pt (TorchScript)")
+print("- lung_cancer_model.onnx (ONNX Opset 18)")"""))
+
+    with open('model-final/lung-cancer-severity-refactored.ipynb', 'w', encoding='utf-8') as f:
+        json.dump(nb, f, indent=2, ensure_ascii=False)
+    
+    print("Notebook generated successfully!")
+
+if __name__ == "__main__":
+    create_refactored_notebook()

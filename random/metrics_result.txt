@@ -1,0 +1,46 @@
+﻿
+Loading model...
+  input=(None, 460, 460, 3)
+
+Collecting test images...
+  adenocarcinoma: 120 images
+  large.cell.carcinoma: 51 images
+  normal: 54 images
+  squamous.cell.carcinoma: 90 images
+
+Total samples: 315
+Running inference...
+  batch 1/40
+  batch 6/40
+  batch 11/40
+  batch 16/40
+  batch 21/40
+  batch 26/40
+  batch 31/40
+  batch 36/40
+
+Confusion Matrix:
+          Adeno   Large  Normal   Squam
+  adenoc     113       6       0       1
+  large.       0      51       0       0
+  normal       1       0      53       0
+  squamo      17       0       0      73
+  adenocarcinoma: P=86.3%  R=94.2%  F1=90.0%  n=120
+  large.cell.carcinoma: P=89.5%  R=100.0%  F1=94.4%  n=51
+  normal: P=100.0%  R=98.1%  F1=99.1%  n=54
+  squamous.cell.carcinoma: P=98.6%  R=81.1%  F1=89.0%  n=90
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓö
+ÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  Accuracy (overall): 92.06%
+  Weighted Precision: 92.68%
+  Weighted Recall:    92.06%
+  Weighted F1-Score:  92.01%
+  Macro Precision:    93.59%
+  Macro Recall:       93.36%
+  Macro F1-Score:     93.14%
+  Total test samples: 315
+
+Saved ΓåÆ backend\static\model_metrics.json
+
+
